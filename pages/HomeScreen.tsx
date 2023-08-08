@@ -7,6 +7,7 @@ import Navbar from '../components/Navbar';
 
 export default function HomeScreen() {
     const listref=useRef()
+    const [loading,setLoading]=useState(false)
     const [images, setImages] = useState([]);
     const[connected,setConnected]=useState(false);
 let baseurl='https://api.flickr.com/services/rest/?method=flickr.photos.getRecent&per_page=20&page=1&api_key=6f102c62f41998d151e5a1b48713cf13&format=json&nojsoncallback=1&extras=url_s'
@@ -14,8 +15,7 @@ let baseurl='https://api.flickr.com/services/rest/?method=flickr.photos.getRecen
     const getRecentImages = async () => {
         try {
           const response = await axios.get(baseurl);
-        //   return response.data.photos.photo
-
+    
           const recentImages = response.data.photos.photo;
           await AsyncStorage.setItem('savedImage', JSON.stringify(recentImages));
       
@@ -29,7 +29,7 @@ let baseurl='https://api.flickr.com/services/rest/?method=flickr.photos.getRecen
 
     useEffect(() => {
       const fetchImages = async () => {
-        
+        //get state of device that it is connected to internet or not
         NetInfo.fetch().then(async state => {
         if (state.isConnected) {
             const response  = await getRecentImages();
@@ -42,13 +42,21 @@ let baseurl='https://api.flickr.com/services/rest/?method=flickr.photos.getRecen
     }
 
       fetchImages();
-    }, [baseurl]);
+    }, [baseurl,loading]);
   
   return (
     <View style={{position:'relative'}}>
         <Navbar listref={listref}/>
+        {images?
        <FlatList
        ref={listref}
+       onRefresh={()=>{
+        setLoading(true);
+        setTimeout(() => {
+            setLoading(false);
+        }, 2000);
+       }}
+     refreshing={loading}
        contentContainerStyle={{padding:5,marginHorizontal:'auto'}}
         data={images}
         keyExtractor={(item:any) => item.id}
@@ -56,6 +64,7 @@ let baseurl='https://api.flickr.com/services/rest/?method=flickr.photos.getRecen
           <Image source={{ uri: item.url_s }} style={styles.imagestyle} />
         )}
       />
+      :<Text> UNABLE TO GET DATA</Text>}
     </View>
   )
 }
